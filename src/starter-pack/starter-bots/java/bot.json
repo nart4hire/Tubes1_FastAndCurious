@@ -1,0 +1,8 @@
+{
+	"author": "Baiting Master",
+	"email": "John.Doe@example.com",
+	"nickName": "Master Baiter",
+	"botLocation": "/target",
+	"botFileName": "java-starter-bot.jar",
+	"botLanguage": "java"
+}
