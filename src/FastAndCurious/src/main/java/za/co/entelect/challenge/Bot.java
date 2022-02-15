@@ -1,5 +1,6 @@
 package za.co.entelect.challenge;
 
+import jdk.internal.util.Preconditions;
 import za.co.entelect.challenge.command.*;
 import za.co.entelect.challenge.entities.*;
 import za.co.entelect.challenge.enums.PowerUps;
@@ -85,28 +86,16 @@ public class Bot {
 
         // Predict Ending States For Commands
         // Returns Difference Of [FinalSpeedState - InitSpeedState, FinalDamage - InitDamage]
-        List<Integer> PREDACCEL = PredictState(ACCELERATE, myCar, front);
-        List<Integer> PREDDECEL = PredictState(DECELERATE, myCar, front);
-        List<Integer> PREDLIZARD = PredictState(LIZARD, myCar, front);
-        List<Integer> PREDOIL = PredictState(OIL, myCar, front);
-        List<Integer> PREDBOOST = PredictState(BOOST, myCar, front);
-        List<Integer> PREDEMP = PredictState(EMP, myCar, front);
-        List<Integer> PREDFIX = PredictState(FIX, myCar, front);
-        List<Integer> PREDTWEET = PredictState(TWEET, myCar, front);
-        List<Integer> PREDLEFT = PredictState(TURN_LEFT, myCar, left);
-        List<Integer> PREDRIGHT = PredictState(TURN_RIGHT, myCar, right);
-
-        // If debug needed:
-        // System.out.println(front);
-        // System.out.println(left);
-        // System.out.println(right);
-
-        
-        
-        // Logic
-        // getter 
-        
-        
+        List<Integer> PREDACCEL = PredictState(ACCELERATE, myCar,opponent, front);
+        List<Integer> PREDDECEL = PredictState(DECELERATE, myCar,opponent, front);
+        List<Integer> PREDLIZARD = PredictState(LIZARD, myCar,opponent, front);
+        List<Integer> PREDOIL = PredictState(OIL, myCar,opponent, front);
+        List<Integer> PREDBOOST = PredictState(BOOST, myCar,opponent, front);
+        List<Integer> PREDEMP = PredictState(EMP, myCar,opponent, front);
+        List<Integer> PREDFIX = PredictState(FIX, myCar,opponent, front);
+        List<Integer> PREDTWEET = PredictState(TWEET, myCar,opponent, front);
+        List<Integer> PREDLEFT = PredictState(TURN_LEFT, myCar,opponent, left);
+        List<Integer> PREDRIGHT = PredictState(TURN_RIGHT, myCar,opponent, right);
 
 
 
@@ -182,42 +171,70 @@ public class Bot {
         return blocks;
     }
 
-    private static List<Integer> getNewStateFromCommand(Command command, List<Integer> SSDMG) {
+    // pembobotan nilai
+    private List<Integer> getNewStateFromCommand(Command command, List<Integer> SSDMG, Car myCar) {
         int MaxSS = getMaxSpeedStateFromDamage(SSDMG.get(1));
         if (command.equals(ACCELERATE)) return Arrays.asList(min(min(SSDMG.get(0) + 1, 4), MaxSS), SSDMG.get(1));
         else if (command.equals(DECELERATE)) return Arrays.asList(max(SSDMG.get(0) - 1, 0), SSDMG.get(1));
         else if (command.equals(BOOST)) return Arrays.asList(min(5, MaxSS), SSDMG.get(1));
-        else if (command.equals(FIX)) return Arrays.asList(SSDMG.get(0), max(SSDMG.get(1) - 2, 0));
+        else if (command.equals(FIX)) {
+
+            if (myCar.damage == 0){
+                return Arrays.asList(SSDMG.get(0) - 2, max(SSDMG.get(1) - 2, 0));
+            } else if (myCar.damage == 1){
+                return Arrays.asList(SSDMG.get(0) , max(SSDMG.get(1) - 2, 0));
+            } else if (myCar.damage == 2 ){
+                return Arrays.asList(SSDMG.get(0) + 2 , max(SSDMG.get(1) - 2, 0));
+            } else {
+                return Arrays.asList(SSDMG.get(0) + 2 , max(SSDMG.get(1) - 2, 0));
+
+            }
+
+        }
         else return Arrays.asList(min(SSDMG.get(0), SSDMG.get(1)), SSDMG.get(1));
     }
 
-    private static List<Integer> getNewStateFromTerrain(Terrain terrain, List<Integer> SSDMG) {
+    private static List<Integer> getNewStateFromTerrain(Terrain terrain, List<Integer> SSDMG, Car opponent, Car myCar) {
         int dmg;
         if (terrain.equals(Terrain.WALL)) dmg = min(SSDMG.get(1) + 2, 5);
         if (terrain.equals(Terrain.MUD) || terrain.equals(Terrain.OIL_SPILL)) dmg = min(SSDMG.get(1) + 1, 5);
+
+        // pembobotan untuk power ups = (speed lost opponent, damage taken by opponent)
+        if (terrain.equals(Terrain.OIL_POWER)){
+            // cara lihat kebelakang gimana ?
+            // jika musuh dibelakang + point else 0
+            return Arrays.asList(SSDMG.get(0) + 1,0);
+        } else if (terrain.equals(Terrain.TWEET)){
+            int speedloss = getSpeedStateFromSpeed(opponent.speed) - 1;
+            return Arrays.asList(speedloss, -2); // damage diurutkan dari yg paling kecil
+        } else if (terrain.equals(Terrain.BOOST)){
+            int speedgain = 5 - getSpeedStateFromSpeed(myCar.speed);
+            return Arrays.asList(speedgain,0);
+        }
         else dmg = min(SSDMG.get(1), 5);
         return Arrays.asList(min(SSDMG.get(0), getMaxSpeedStateFromDamage(dmg)), dmg);
+        // urutan belum diimplement
     }
 
-    private List<Integer> PredictState(Command command, Car myCar, List<Terrain> Lanes) {
+    private List<Integer> PredictState(Command command, Car myCar, Car opponent, List<Terrain> Lanes) {
         List<Integer> State = Arrays.asList(getSpeedStateFromSpeed(myCar.speed), myCar.damage);
         if (Lanes == null) {
             return null;
         }
 
-        State = getNewStateFromCommand(command, State);
+        State = getNewStateFromCommand(command, State, myCar); // nilai utk acc,dec,fix,boost
 
         if (command.equals(LIZARD)) {
-            State = getNewStateFromTerrain(Lanes.get(Lanes.size() - 1), State); // Only Last One If Lizard
+            State = getNewStateFromTerrain(Lanes.get(Lanes.size() - 1), State, opponent, myCar); // Only Last One If Lizard
         }
         else if (!command.equals(FIX)){
             for (Terrain lane : Lanes) {
-                State = getNewStateFromTerrain(lane, State);
+                State = getNewStateFromTerrain(lane, State,opponent,myCar);
                 if (lane.equals(Terrain.WALL)) break;
             }
-            // pembobotan power ups
-            // pembobotan pemakaian power up selain boost 
-            // pembobotan fix
+            // pembobotan power ups , check
+            // pembobotan pemakaian power up selain boost, check
+            // pembobotan fix, check
             // main logic 
         }
 
@@ -225,3 +242,9 @@ public class Bot {
     }
 
 }
+
+// changes
+// 1. PredicState add paramter opponent
+// 1. getNewStateFromCommand add paramater myCar
+// 2. getNewStateFromTerrain add paramater opponent myCar
+
