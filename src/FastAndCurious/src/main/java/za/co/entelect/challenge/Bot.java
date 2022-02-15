@@ -13,35 +13,54 @@ import java.security.SecureRandom;
 
 public class Bot {
 
-    private static final int maxSpeed = 9;
-    private List<Command> directionList = new ArrayList<>();
+    // Speed State Definition
+    private static final int SSMin = 0;
+    private static final int SS1 = 3;
+    private static final int SS2 = 6;
+    private static final int SS3 = 8;
+    private static final int SSMax = 9;
 
-    private final Random random;
+    private static final int SSI = 5;
+    private static final int SSB = 15;
 
+    // Command Definition
     private final static Command ACCELERATE = new AccelerateCommand();
+    private final static Command DECELERATE = new DecelerateCommand();
     private final static Command LIZARD = new LizardCommand();
     private final static Command OIL = new OilCommand();
     private final static Command BOOST = new BoostCommand();
     private final static Command EMP = new EmpCommand();
     private final static Command FIX = new FixCommand();
+    private static Command TWEET(int lane, int block) { return new TweetCommand(lane, block); }
 
     private final static Command TURN_RIGHT = new ChangeLaneCommand(1);
     private final static Command TURN_LEFT = new ChangeLaneCommand(-1);
 
+    // Object Instantiate
     public Bot() {
-        this.random = new SecureRandom();
-        directionList.add(TURN_LEFT);
-        directionList.add(TURN_RIGHT);
+        // Has no innate
     }
 
     public Command run(GameState gameState) {
         Car myCar = gameState.player;
         Car opponent = gameState.opponent;
 
-        //Basic fix logic
-        List<Object> blocks = getBlocksInFront(myCar.position.lane, myCar.position.block, gameState);
-        List<Object> nextBlocks = blocks.subList(0,1);
+        // Returns front terrain
+        List<Object> front = getBlocksInLane(myCar.position.lane, myCar.position.block + 1, gameState);
 
+        // Returns right terrain
+        List<Object> right = null;
+        if (myCar.position.lane != 4) right = getBlocksInLane(myCar.position.lane + 1, myCar.position.block, gameState);
+
+        List<Object> left = null;
+        if (myCar.position.lane != 1) left = getBlocksInLane(myCar.position.lane - 1, myCar.position.block, gameState);
+
+        //        System.out.println(front);
+        //        System.out.println(left);
+        //        System.out.println(right);
+        
+        // Logic
+        
         //Fix first if too damaged to move
         if(myCar.damage == 5) {
             return FIX;
@@ -57,14 +76,12 @@ public class Bot {
         }
 
         //Basic avoidance logic
-        if (blocks.contains(Terrain.MUD) || nextBlocks.contains(Terrain.WALL)) {
+        if (front.contains(Terrain.MUD) || front.contains(Terrain.WALL)) {
             if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
                 return LIZARD;
             }
-            if (nextBlocks.contains(Terrain.MUD) || nextBlocks.contains(Terrain.WALL)) {
-                int i = random.nextInt(directionList.size());
-                return directionList.get(i);
-            }
+            else if  (myCar.position.lane == 1) return TURN_RIGHT;
+            else return TURN_LEFT;
         }
 
         //Basic improvement logic
@@ -73,7 +90,7 @@ public class Bot {
         }
 
         //Basic aggression logic
-        if (myCar.speed == maxSpeed) {
+        if (myCar.speed == SSMax) {
             if (hasPowerUp(PowerUps.OIL, myCar.powerups)) {
                 return OIL;
             }
@@ -85,9 +102,9 @@ public class Bot {
         return ACCELERATE;
     }
 
-    private Boolean hasPowerUp(PowerUps powerUpToCheck, PowerUps[] available) {
-        for (PowerUps powerUp: available) {
-            if (powerUp.equals(powerUpToCheck)) {
+    private Boolean hasPowerUp(PowerUps ToCheck, PowerUps[] PList) {
+        for (PowerUps powerUp: PList) {
+            if (powerUp.equals(ToCheck)) {
                 return true;
             }
         }
@@ -98,13 +115,13 @@ public class Bot {
      * Returns map of blocks and the objects in the for the current lanes, returns
      * the amount of blocks that can be traversed at max speed.
      **/
-    private List<Object> getBlocksInFront(int lane, int block, GameState gameState) {
+    private List<Object> getBlocksInLane(int lane, int block, GameState gameState) {
         List<Lane[]> map = gameState.lanes;
         List<Object> blocks = new ArrayList<>();
         int startBlock = map.get(0)[0].position.block;
 
         Lane[] laneList = map.get(lane - 1);
-        for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxSpeed; i++) {
+        for (int i = max(block - startBlock, 0); i < block - startBlock + Bot.SSMax; i++) {
             if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
                 break;
             }
