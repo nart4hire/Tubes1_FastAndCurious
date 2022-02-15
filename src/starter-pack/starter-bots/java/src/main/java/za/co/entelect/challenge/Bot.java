@@ -34,6 +34,10 @@ public class Bot {
         if (myCar.damage >= 5) {
             return new FixCommand();
         }
+        if (blocks.contains(Terrain.MUD)) {
+            int i = random.nextInt(directionList.size());
+            return new ChangeLaneCommand(directionList.get(i));
+        }
         return new AccelerateCommand();
     }
 

@@ -5,6 +5,11 @@ By:
 - 13520129/Nathanael Santoso
 - 13520147/Aloysius Gilang Pramudya
 
+## Cara compile
+- cd src\FastAndCurious
+- Pada IDEA -> view | Tool Windows | Maven
+- Pada folder lifecycles ada "package", select lalu klik tombol run hijau pada tool window
+
 ## Spesifikasi Pengumpulan
 Program disimpan dalam folder Tubes1_NamaKelompok dengan NamaKelompok merupakan nama kelompok yang terdaftar pada https://bit.ly/KelompokStima12022. Berikut merupakan struktur dari isi folder tersebut.
 - Folder src berisi source code (Folder bot kalian dengan struktur seperti folder
