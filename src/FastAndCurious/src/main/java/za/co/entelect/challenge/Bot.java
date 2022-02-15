@@ -8,8 +8,7 @@ import za.co.entelect.challenge.enums.Terrain;
 import java.util.*;
 
 import static java.lang.Math.max;
-
-import java.security.SecureRandom;
+import static java.lang.Math.min;
 
 public class Bot {
 
@@ -85,6 +84,7 @@ public class Bot {
         if (myCar.position.lane != 4) right = getBlocksInLane(myCar.position.lane + 1, myCar.position.block, gameState);
 
         // Predict Ending States For Commands
+        // Returns Difference Of [InitSpeedState - FinalSpeedState, InitDamage - FinalDamage]
         List<Integer> PREDACCEL = PredictState(ACCELERATE, myCar, front);
         List<Integer> PREDDECEL = PredictState(ACCELERATE, myCar, front);
         List<Integer> PREDLIZARD = PredictState(LIZARD, myCar, front);
@@ -95,14 +95,14 @@ public class Bot {
         List<Integer> PREDTWEET = PredictState(TWEET, myCar, front);
         List<Integer> PREDLEFT = PredictState(TURN_LEFT, myCar, left);
         List<Integer> PREDRIGHT = PredictState(TURN_RIGHT, myCar, right);
-        
+
         // If debug needed:
         // System.out.println(front);
         // System.out.println(left);
         // System.out.println(right);
-        
+
         // Logic
-        
+
         //Fix first if too damaged to move
         if(myCar.damage == 5) {
             return FIX;
@@ -177,19 +177,19 @@ public class Bot {
 
     private static List<Integer> getNewStateFromCommand(Command command, List<Integer> SSDMG) {
         int MaxSS = getMaxSpeedStateFromDamage(SSDMG.get(1));
-        if (command.equals(ACCELERATE)) return Arrays.asList(Math.min(Math.min(SSDMG.get(0) + 1, 4), MaxSS), SSDMG.get(1));
+        if (command.equals(ACCELERATE)) return Arrays.asList(min(min(SSDMG.get(0) + 1, 4), MaxSS), SSDMG.get(1));
         else if (command.equals(DECELERATE)) return Arrays.asList(max(SSDMG.get(0) - 1, 0), SSDMG.get(1));
-        else if (command.equals(BOOST)) return Arrays.asList(Math.min(5, MaxSS), SSDMG.get(1));
+        else if (command.equals(BOOST)) return Arrays.asList(min(5, MaxSS), SSDMG.get(1));
         else if (command.equals(FIX)) return Arrays.asList(SSDMG.get(0), max(SSDMG.get(1) - 2, 0));
-        else return Arrays.asList(Math.min(SSDMG.get(0), SSDMG.get(1)), SSDMG.get(1));
+        else return Arrays.asList(min(SSDMG.get(0), SSDMG.get(1)), SSDMG.get(1));
     }
 
     private static List<Integer> getNewStateFromTerrain(Terrain terrain, List<Integer> SSDMG) {
         int dmg;
-        if (terrain.equals(Terrain.WALL)) dmg = Math.min(SSDMG.get(1) + 2, 5);
-        if (terrain.equals(Terrain.MUD) || terrain.equals(Terrain.OIL_SPILL)) dmg = Math.min(SSDMG.get(1) + 1, 5);
-        else dmg = Math.min(SSDMG.get(1), 5);
-        return Arrays.asList(Math.min(SSDMG.get(0), getMaxSpeedStateFromDamage(dmg)), dmg);
+        if (terrain.equals(Terrain.WALL)) dmg = min(SSDMG.get(1) + 2, 5);
+        if (terrain.equals(Terrain.MUD) || terrain.equals(Terrain.OIL_SPILL)) dmg = min(SSDMG.get(1) + 1, 5);
+        else dmg = min(SSDMG.get(1), 5);
+        return Arrays.asList(min(SSDMG.get(0), getMaxSpeedStateFromDamage(dmg)), dmg);
     }
 
     private List<Integer> PredictState(Command command, Car myCar, List<Terrain> Lanes) {
