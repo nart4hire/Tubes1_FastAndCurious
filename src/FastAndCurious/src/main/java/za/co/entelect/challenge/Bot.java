@@ -84,9 +84,9 @@ public class Bot {
         if (myCar.position.lane != 4) right = getBlocksInLane(myCar.position.lane + 1, myCar.position.block, gameState);
 
         // Predict Ending States For Commands
-        // Returns Difference Of [InitSpeedState - FinalSpeedState, InitDamage - FinalDamage]
+        // Returns Difference Of [FinalSpeedState - InitSpeedState, FinalDamage - InitDamage]
         List<Integer> PREDACCEL = PredictState(ACCELERATE, myCar, front);
-        List<Integer> PREDDECEL = PredictState(ACCELERATE, myCar, front);
+        List<Integer> PREDDECEL = PredictState(DECELERATE, myCar, front);
         List<Integer> PREDLIZARD = PredictState(LIZARD, myCar, front);
         List<Integer> PREDOIL = PredictState(OIL, myCar, front);
         List<Integer> PREDBOOST = PredictState(BOOST, myCar, front);
@@ -101,7 +101,14 @@ public class Bot {
         // System.out.println(left);
         // System.out.println(right);
 
+        
+        
         // Logic
+        // getter 
+        
+        
+
+
 
         //Fix first if too damaged to move
         if(myCar.damage == 5) {
@@ -208,6 +215,10 @@ public class Bot {
                 State = getNewStateFromTerrain(lane, State);
                 if (lane.equals(Terrain.WALL)) break;
             }
+            // pembobotan power ups
+            // pembobotan pemakaian power up selain boost 
+            // pembobotan fix
+            // main logic 
         }
 
         return Arrays.asList(State.get(0) - getSpeedStateFromSpeed(myCar.speed), State.get(1) - myCar.damage);
