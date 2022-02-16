@@ -119,7 +119,7 @@ public class Bot {
             if (BESTPRED.equals(PRED)) break;
             idx++;
         }
-        
+
         switch (idx) {
             case 0: return ACCELERATE;
             case 1: return DECELERATE;
@@ -134,7 +134,6 @@ public class Bot {
             default: return ACCELERATE;
         }
         // System.out.println(i);
-
     }
 
     private Boolean hasPowerUp(PowerUps ToCheck, PowerUps[] PList) {
@@ -208,7 +207,7 @@ public class Bot {
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -5, 2);
             }
         } else if (command.equals(EMP)){
-            if (hasPowerUp(PowerUps.TWEET, myCar.powerups) && isEnemyEMPable(myCar, opponent)){ // and musuh dibelakang
+            if (hasPowerUp(PowerUps.TWEET, myCar.powerups) && isEnemyEMPable(myCar, opponent)){ // and musuh di depan
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), (getSpeedStateFromSpeed(opponent.speed) - 1), -2);
             } else {
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -5, 2);
@@ -216,41 +215,37 @@ public class Bot {
         }
         return Arrays.asList(SSDMG.get(0), SSDMG.get(1), 0, 0);
     }
-
+    
+    //Pembobotan dari powerup dan obstacle 
     private static List<Integer> getNewStateFromTerrain(Terrain terrain, List<Integer> SSDMG, Car opponent, Car myCar) {
         int dmg = SSDMG.get(1);
         int bobotacc = SSDMG.get(2);
         int bobotdmg = SSDMG.get(3);
         if (terrain.equals(Terrain.WALL)) dmg = min(SSDMG.get(1) + 2, 5);
         if (terrain.equals(Terrain.MUD) || terrain.equals(Terrain.OIL_SPILL)) dmg = min(SSDMG.get(1) + 1, 5);
-
-        // pembobotan untuk power ups = (speed lost opponent, damage taken by opponent)
-        if (terrain.equals(Terrain.OIL_POWER)){
-            // cara lihat kebelakang gimana ?
-            // jika musuh dibelakang + point else 0
-            bobotacc = 1;
-            bobotdmg = 0;
-        } else if (terrain.equals(Terrain.TWEET)){
-            int speedloss = getSpeedStateFromSpeed(opponent.speed) - 1;
-            bobotacc = speedloss;
-            bobotacc = -2;
-        } else if (terrain.equals(Terrain.BOOST)){
-            int speedgain = 5 - getSpeedStateFromSpeed(myCar.speed);
-            bobotacc = speedgain;
-            bobotdmg = 0;
-        } else if (terrain.equals(Terrain.EMP)){
-            int speedloss = getSpeedStateFromSpeed(opponent.speed) - 1;
-            bobotacc = speedloss;
-            bobotdmg = 0;
-        } else if (terrain.equals(Terrain.LIZARD)){
-            bobotacc = 0 ;
-            bobotdmg = -1;
+        // pembobotan untuk power ups = (..., ..., bobotacc, bobotdmg)
+        if (terrain.equals(Terrain.OIL_POWER)) {
+            bobotacc += 1;
+            bobotdmg += 0;
+        } else if (terrain.equals(Terrain.TWEET)) {
+            bobotacc += 1;
+            bobotdmg += -2;
+        } else if (terrain.equals(Terrain.BOOST)) {
+            bobotacc += 2;
+            bobotdmg += 0;
+        } else if (terrain.equals(Terrain.EMP)) {
+            bobotacc += 1;
+            bobotdmg += 0;
+        } else if (terrain.equals(Terrain.LIZARD)) {
+            bobotacc += 1;
+            bobotdmg += -1;
         }
         else dmg = min(SSDMG.get(1), 5);
         return Arrays.asList(min(SSDMG.get(0), getMaxSpeedStateFromDamage(dmg)), dmg, bobotacc, bobotdmg);
-        // urutan belum diimplement
+
     }
 
+    // Fungsi Pembobotan 
     private List<Integer> PredictState(Command command, Car myCar, Car opponent, List<Terrain> Lanes) {
         List<Integer> State = Arrays.asList(getSpeedStateFromSpeed(myCar.speed), myCar.damage, 0, 0);
         if (Lanes == null) {
@@ -267,20 +262,10 @@ public class Bot {
                 State = getNewStateFromTerrain(lane, State,opponent,myCar);
                 if (lane.equals(Terrain.WALL)) break;
             }
-            // pembobotan power ups , check
-            // pembobotan pemakaian power up selain boost, check
-            // pembobotan fix, check
-            // main logic 
         }
-
-        // State = smth...
 
         return Arrays.asList(State.get(0) - getSpeedStateFromSpeed(myCar.speed) + State.get(2), State.get(1) - myCar.damage + State.get(3));
     }
 
 }
-// changes
-// 1. PredicState add paramter opponent
-// 1. getNewStateFromCommand add paramater myCar
-// 2. getNewStateFromTerrain add paramater opponent myCar
 
