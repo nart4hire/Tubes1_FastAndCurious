@@ -276,7 +276,6 @@ public class Bot {
         else if (!command.equals(FIX)){
             for (Terrain lane : Lanes) {
                 State = getNewStateFromTerrain(lane, State,opponent,myCar);
-                if (lane.equals(Terrain.WALL)) break;
             }
         }
 
