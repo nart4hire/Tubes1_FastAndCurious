@@ -85,6 +85,11 @@ public class Bot {
         List<Terrain> right = null;
         if (myCar.position.lane != 4) right = getBlocksInLane(myCar.position.lane + 1, myCar.position.block, gameState);
 
+        // Debug Lane
+//        System.out.println(left);
+//        System.out.println(front);
+//        System.out.println(right);
+
         // Predict Ending States For Commands
         // Returns Difference Of [FinalSpeedState - InitSpeedStat + AccelerationWeight, FinalDamage - InitDamage + DamageWeight]
         List<Integer> PREDACCEL = PredictState(ACCELERATE, myCar,opponent, front);
@@ -104,14 +109,14 @@ public class Bot {
 
         List<Integer> BESTPRED = null;
         for (List<Integer> PRED: PREDCOMMANDS) {
-            System.out.print(PRED); // Debug
+//            System.out.println(PRED); // Debug
             if (BESTPRED == null) { // first
                 BESTPRED = PRED;
                 continue;
             }
             if (PRED == null) continue; // null guard
             if (BESTPRED.get(0) < PRED.get(0)) BESTPRED = PRED; // prediksi baru lebih baik secara speed state
-            else if (BESTPRED.get(0) == PRED.get(0) && BESTPRED.get(1) > PRED.get(1)) BESTPRED = PRED; // prediksi baru speed state sama namun lebih baik secara damage
+            else if (BESTPRED.get(0).equals(PRED.get(0)) && BESTPRED.get(1) > PRED.get(1)) BESTPRED = PRED; // prediksi baru speed state sama namun lebih baik secara damage
         }
 
         int idx = 0;
@@ -128,7 +133,7 @@ public class Bot {
             case 4: return BOOST;
             case 5: return EMP;
             case 6: return FIX;
-            case 7: return TWEET(opponent.position.lane, opponent.position.block + 1);
+            case 7: return TWEET(opponent.position.lane, opponent.position.block + opponent.speed + 1);
             case 8: return TURN_LEFT;
             case 9: return TURN_RIGHT; 
             default: return ACCELERATE;
@@ -155,11 +160,12 @@ public class Bot {
         int startBlock = map.get(0)[0].position.block;
 
         Lane[] laneList = map.get(lane - 1);
-        for (int i = max(block - startBlock, 0); i < block - startBlock + Bot.SSMax; i++) {
+        for (int i = max(block - startBlock, 0); i < block - startBlock + gameState.player.speed; i++) {
             if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
                 break;
             }
-            blocks.add(laneList[i].terrain);
+            if (laneList[i].isOccupiedByCyberTruck) blocks.add(Terrain.WALL);
+            else blocks.add(laneList[i].terrain);
         }
         return blocks;
     }
@@ -180,7 +186,6 @@ public class Bot {
 
         if (command.equals(ACCELERATE)) return Arrays.asList(min(min(SSDMG.get(0) + 1, 4), MaxSS), SSDMG.get(1), 0, 0);
         else if (command.equals(DECELERATE)) return Arrays.asList(max(SSDMG.get(0) - 1, 0), SSDMG.get(1), 0, 0);
-        else if (command.equals(BOOST)) return Arrays.asList(min(5, MaxSS), SSDMG.get(1), MaxSS - 5, 0);
         else if (command.equals(FIX)) {
 
             switch (SSDMG.get(1)) {
@@ -194,30 +199,34 @@ public class Bot {
                     return Arrays.asList(SSDMG.get(0) , SSDMG.get(1) - 2, 5, 0);
             }
 
-        } else if (command.equals(OIL)){
+        }
+        else if (command.equals(BOOST)) {
+            if (hasPowerUp(PowerUps.BOOST, myCar.powerups)) return Arrays.asList(min(5, MaxSS), SSDMG.get(1), MaxSS - 5, 0);
+            else return Arrays.asList(SSDMG.get(0), SSDMG.get(1), -5, 0);
+        }
+        else if (command.equals(OIL)) {
             if (hasPowerUp(PowerUps.OIL, myCar.powerups) && isEnemyDirectlyBehind(myCar, opponent)) { // and musuh dibelakang (SS, DMG) (desc,asc)
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), 1, -1);
             } else {
-                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -1, 1);
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -5, 1);
             }
-        } else if (command.equals(TWEET)){
+        } else if (command.equals(TWEET)) {
             if (hasPowerUp(PowerUps.TWEET, myCar.powerups)) { 
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), (getSpeedStateFromSpeed(opponent.speed) - 1), -2);
             } else {
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -5, 2);
             }
-        } else if (command.equals(EMP)){
+        } else if (command.equals(EMP)) {
             if (hasPowerUp(PowerUps.TWEET, myCar.powerups) && isEnemyEMPable(myCar, opponent)){ // and musuh di depan
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), (getSpeedStateFromSpeed(opponent.speed) - 1), -2);
             } else {
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -5, 2);
             }
         } else if (command.equals(LIZARD)){
-            if (hasPowerUp(PowerUps.LIZARD, myCar.powerups) && getSpeedStateFromSpeed(myCar.speed) == SSB){
+            if (hasPowerUp(PowerUps.LIZARD, myCar.powerups) && myCar.speed == SSB){
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), 2, 0);
-            } else {
-                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -2, 0);
-                
+            } else if (!hasPowerUp(PowerUps.LIZARD, myCar.powerups)){
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -5, 0);
             }
         }
         return Arrays.asList(SSDMG.get(0), SSDMG.get(1), 0, 0);
@@ -262,7 +271,7 @@ public class Bot {
         State = getNewStateFromCommand(command, State, myCar, opponent); // nilai utk acc,dec,fix,boost
 
         if (command.equals(LIZARD)) {
-            State = getNewStateFromTerrain(Lanes.get(Lanes.size() - 1), State, opponent, myCar); // Only Last One If Lizard
+            if (Lanes.size() != 0) State = getNewStateFromTerrain(Lanes.get(Lanes.size() - 1), State, opponent, myCar); // Only Last One If Lizard
         }
         else if (!command.equals(FIX)){
             for (Terrain lane : Lanes) {
@@ -273,6 +282,5 @@ public class Bot {
 
         return Arrays.asList(State.get(0) - getSpeedStateFromSpeed(myCar.speed) + State.get(2), State.get(1) - myCar.damage + State.get(3));
     }
-
 }
 
