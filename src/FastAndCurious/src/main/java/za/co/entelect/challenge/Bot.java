@@ -212,10 +212,17 @@ public class Bot {
             } else {
                 return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -5, 2);
             }
+        } else if (command.equals(LIZARD)){
+            if (hasPowerUp(PowerUps.LIZARD, myCar.powerups) && getSpeedStateFromSpeed(myCar.speed) == SSB){
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), 2, 0);
+            } else {
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -2, 0);
+                
+            }
         }
         return Arrays.asList(SSDMG.get(0), SSDMG.get(1), 0, 0);
     }
-    
+
     //Pembobotan dari powerup dan obstacle 
     private static List<Integer> getNewStateFromTerrain(Terrain terrain, List<Integer> SSDMG, Car opponent, Car myCar) {
         int dmg = SSDMG.get(1);
