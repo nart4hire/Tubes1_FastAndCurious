@@ -10,6 +10,7 @@ import java.util.*;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.abs;
 
 public class Bot {
 
@@ -85,7 +86,7 @@ public class Bot {
         if (myCar.position.lane != 4) right = getBlocksInLane(myCar.position.lane + 1, myCar.position.block, gameState);
 
         // Predict Ending States For Commands
-        // Returns Difference Of [FinalSpeedState - InitSpeedState, FinalDamage - InitDamage]
+        // Returns Difference Of [FinalSpeedState - InitSpeedStat + AccelerationWeight, FinalDamage - InitDamage + DamageWeight]
         List<Integer> PREDACCEL = PredictState(ACCELERATE, myCar,opponent, front);
         List<Integer> PREDDECEL = PredictState(DECELERATE, myCar,opponent, front);
         List<Integer> PREDLIZARD = PredictState(LIZARD, myCar,opponent, front);
@@ -97,50 +98,43 @@ public class Bot {
         List<Integer> PREDLEFT = PredictState(TURN_LEFT, myCar,opponent, left);
         List<Integer> PREDRIGHT = PredictState(TURN_RIGHT, myCar,opponent, right);
 
+        List<List<Integer>> PREDCOMMANDS = Arrays.asList(PREDACCEL, PREDDECEL, PREDLIZARD, PREDOIL, PREDBOOST, PREDEMP, PREDFIX, PREDTWEET, PREDLEFT, PREDRIGHT);
+        // fungsi seleksi 
+        // find list yang ( max SS, kalo sama SSnya find min DMG )
 
-
-        //Fix first if too damaged to move
-        if(myCar.damage == 5) {
-            return FIX;
-        }
-        //Accelerate first if going to slow
-        if(myCar.speed <= 3) {
-            return ACCELERATE;
-        }
-
-        //Basic fix logic
-        if(myCar.damage >= 5) {
-            return FIX;
-        }
-
-        //Basic avoidance logic
-        if (front.contains(Terrain.MUD) || front.contains(Terrain.WALL)) {
-            if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
-                return LIZARD;
+        List<Integer> BESTPRED = null;
+        for (List<Integer> PRED: PREDCOMMANDS) {
+            System.out.print(PRED); // Debug
+            if (BESTPRED == null) { // first
+                BESTPRED = PRED;
+                continue;
             }
-            else if  (myCar.position.lane == 1) return TURN_RIGHT;
-            else return TURN_LEFT;
+            if (PRED == null) continue; // null guard
+            if (BESTPRED.get(0) < PRED.get(0)) BESTPRED = PRED; // prediksi baru lebih baik secara speed state
+            else if (BESTPRED.get(0) == PRED.get(0) && BESTPRED.get(1) > PRED.get(1)) BESTPRED = PRED; // prediksi baru speed state sama namun lebih baik secara damage
         }
 
-        //Basic improvement logic
-        if (hasPowerUp(PowerUps.BOOST, myCar.powerups)) {
-            return BOOST;
+        int idx = 0;
+        for (List<Integer> PRED: PREDCOMMANDS) {
+            if (BESTPRED.equals(PRED)) break;
+            idx++;
         }
-
-        //Basic aggression logic
-        if (myCar.speed == SSMax) {
-            if (hasPowerUp(PowerUps.TWEET, myCar.powerups)) {
-                return TWEET(opponent.position.lane, opponent.position.block + 1);
-            }
-            if (hasPowerUp(PowerUps.OIL, myCar.powerups)) {
-                return OIL;
-            }
-            if (hasPowerUp(PowerUps.EMP, myCar.powerups)) {
-                return EMP;
-            }
+        
+        switch (idx) {
+            case 0: return ACCELERATE;
+            case 1: return DECELERATE;
+            case 2: return LIZARD;
+            case 3: return OIL;
+            case 4: return BOOST;
+            case 5: return EMP;
+            case 6: return FIX;
+            case 7: return TWEET(opponent.position.lane, opponent.position.block + 1);
+            case 8: return TURN_LEFT;
+            case 9: return TURN_RIGHT; 
+            default: return ACCELERATE;
         }
+        // System.out.println(i);
 
-        return ACCELERATE;
     }
 
     private Boolean hasPowerUp(PowerUps ToCheck, PowerUps[] PList) {
@@ -171,31 +165,62 @@ public class Bot {
         return blocks;
     }
 
+    private static boolean isEnemyDirectlyBehind(Car myCar, Car oppCar) {
+        int posDiff = myCar.position.block - oppCar.position.block;
+        return (myCar.position.lane == oppCar.position.lane && posDiff > 0 && posDiff <= oppCar.speed);
+    }
+
+    private static boolean isEnemyEMPable(Car myCar, Car oppCar) {
+        return (abs(myCar.position.lane - oppCar.position.lane) <= 1 && oppCar.position.block > myCar.position.block);
+    }
+
     // pembobotan nilai
-    private List<Integer> getNewStateFromCommand(Command command, List<Integer> SSDMG, Car myCar) {
+    private List<Integer> getNewStateFromCommand(Command command, List<Integer> SSDMG, Car myCar, Car opponent) {
+
         int MaxSS = getMaxSpeedStateFromDamage(SSDMG.get(1));
-        if (command.equals(ACCELERATE)) return Arrays.asList(min(min(SSDMG.get(0) + 1, 4), MaxSS), SSDMG.get(1));
-        else if (command.equals(DECELERATE)) return Arrays.asList(max(SSDMG.get(0) - 1, 0), SSDMG.get(1));
-        else if (command.equals(BOOST)) return Arrays.asList(min(5, MaxSS), SSDMG.get(1));
+
+        if (command.equals(ACCELERATE)) return Arrays.asList(min(min(SSDMG.get(0) + 1, 4), MaxSS), SSDMG.get(1), 0, 0);
+        else if (command.equals(DECELERATE)) return Arrays.asList(max(SSDMG.get(0) - 1, 0), SSDMG.get(1), 0, 0);
+        else if (command.equals(BOOST)) return Arrays.asList(min(5, MaxSS), SSDMG.get(1), MaxSS - 5, 0);
         else if (command.equals(FIX)) {
 
-            if (myCar.damage == 0){
-                return Arrays.asList(SSDMG.get(0) - 2, max(SSDMG.get(1) - 2, 0));
-            } else if (myCar.damage == 1){
-                return Arrays.asList(SSDMG.get(0) , max(SSDMG.get(1) - 2, 0));
-            } else if (myCar.damage == 2 ){
-                return Arrays.asList(SSDMG.get(0) + 2 , max(SSDMG.get(1) - 2, 0));
-            } else {
-                return Arrays.asList(SSDMG.get(0) + 2 , max(SSDMG.get(1) - 2, 0));
-
+            switch (SSDMG.get(1)) {
+                case 0:
+                    return Arrays.asList(SSDMG.get(0), 0, -5, 0);
+                case 1:
+                    return Arrays.asList(SSDMG.get(0), 0, 0, 0);
+                case 2:
+                    return Arrays.asList(SSDMG.get(0), 0, 5, 0);
+                default:
+                    return Arrays.asList(SSDMG.get(0) , SSDMG.get(1) - 2, 5, 0);
             }
 
+        } else if (command.equals(OIL)){
+            if (hasPowerUp(PowerUps.OIL, myCar.powerups) && isEnemyDirectlyBehind(myCar, opponent)) { // and musuh dibelakang (SS, DMG) (desc,asc)
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), 1, -1);
+            } else {
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -1, 1);
+            }
+        } else if (command.equals(TWEET)){
+            if (hasPowerUp(PowerUps.TWEET, myCar.powerups)) { 
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), (getSpeedStateFromSpeed(opponent.speed) - 1), -2);
+            } else {
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -5, 2);
+            }
+        } else if (command.equals(EMP)){
+            if (hasPowerUp(PowerUps.TWEET, myCar.powerups) && isEnemyEMPable(myCar, opponent)){ // and musuh dibelakang
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), (getSpeedStateFromSpeed(opponent.speed) - 1), -2);
+            } else {
+                return Arrays.asList(SSDMG.get(0) , SSDMG.get(1), -5, 2);
+            }
         }
-        else return Arrays.asList(min(SSDMG.get(0), SSDMG.get(1)), SSDMG.get(1));
+        return Arrays.asList(SSDMG.get(0), SSDMG.get(1), 0, 0);
     }
 
     private static List<Integer> getNewStateFromTerrain(Terrain terrain, List<Integer> SSDMG, Car opponent, Car myCar) {
-        int dmg;
+        int dmg = SSDMG.get(1);
+        int bobotacc = SSDMG.get(2);
+        int bobotdmg = SSDMG.get(3);
         if (terrain.equals(Terrain.WALL)) dmg = min(SSDMG.get(1) + 2, 5);
         if (terrain.equals(Terrain.MUD) || terrain.equals(Terrain.OIL_SPILL)) dmg = min(SSDMG.get(1) + 1, 5);
 
@@ -203,26 +228,36 @@ public class Bot {
         if (terrain.equals(Terrain.OIL_POWER)){
             // cara lihat kebelakang gimana ?
             // jika musuh dibelakang + point else 0
-            return Arrays.asList(SSDMG.get(0) + 1,0);
+            bobotacc = 1;
+            bobotdmg = 0;
         } else if (terrain.equals(Terrain.TWEET)){
             int speedloss = getSpeedStateFromSpeed(opponent.speed) - 1;
-            return Arrays.asList(speedloss, -2); // damage diurutkan dari yg paling kecil
+            bobotacc = speedloss;
+            bobotacc = -2;
         } else if (terrain.equals(Terrain.BOOST)){
             int speedgain = 5 - getSpeedStateFromSpeed(myCar.speed);
-            return Arrays.asList(speedgain,0);
+            bobotacc = speedgain;
+            bobotdmg = 0;
+        } else if (terrain.equals(Terrain.EMP)){
+            int speedloss = getSpeedStateFromSpeed(opponent.speed) - 1;
+            bobotacc = speedloss;
+            bobotdmg = 0;
+        } else if (terrain.equals(Terrain.LIZARD)){
+            bobotacc = 0 ;
+            bobotdmg = -1;
         }
         else dmg = min(SSDMG.get(1), 5);
-        return Arrays.asList(min(SSDMG.get(0), getMaxSpeedStateFromDamage(dmg)), dmg);
+        return Arrays.asList(min(SSDMG.get(0), getMaxSpeedStateFromDamage(dmg)), dmg, bobotacc, bobotdmg);
         // urutan belum diimplement
     }
 
     private List<Integer> PredictState(Command command, Car myCar, Car opponent, List<Terrain> Lanes) {
-        List<Integer> State = Arrays.asList(getSpeedStateFromSpeed(myCar.speed), myCar.damage);
+        List<Integer> State = Arrays.asList(getSpeedStateFromSpeed(myCar.speed), myCar.damage, 0, 0);
         if (Lanes == null) {
             return null;
         }
 
-        State = getNewStateFromCommand(command, State, myCar); // nilai utk acc,dec,fix,boost
+        State = getNewStateFromCommand(command, State, myCar, opponent); // nilai utk acc,dec,fix,boost
 
         if (command.equals(LIZARD)) {
             State = getNewStateFromTerrain(Lanes.get(Lanes.size() - 1), State, opponent, myCar); // Only Last One If Lizard
@@ -238,11 +273,12 @@ public class Bot {
             // main logic 
         }
 
-        return Arrays.asList(State.get(0) - getSpeedStateFromSpeed(myCar.speed), State.get(1) - myCar.damage);
+        // State = smth...
+
+        return Arrays.asList(State.get(0) - getSpeedStateFromSpeed(myCar.speed) + State.get(2), State.get(1) - myCar.damage + State.get(3));
     }
 
 }
-
 // changes
 // 1. PredicState add paramter opponent
 // 1. getNewStateFromCommand add paramater myCar
