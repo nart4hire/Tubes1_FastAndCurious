@@ -40,7 +40,7 @@ Cara:
   |-- bin
     |-- target
       |-- ... ( class folders and maven build files )
-      \- FastAndCurious-jar-with-dependencies.jar
+      \- FastAndCurious-jar-with-dependencies.jar ( Diperlukan jika run memakai game-runner-with-dependencies )
       \- FastAndCurious.jar
     \- bot.json
   |-- doc
