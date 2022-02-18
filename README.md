@@ -1,96 +1,90 @@
 # Fast And Curious
+
 Pemanfaatan Algoritma Greedy dalam Aplikasi Permainan "Overdrive"
 By:
 - 13520111/Rizky Akbar Asmaran
 - 13520129/Nathanael Santoso
 - 13520147/Aloysius Gilang Pramudya
 
+## Introduksi
+
+Repository ini adalah penerapan algoritma greedy sebagai engine bot permainan overdrive yang dikembangkan oleh entelect untuk turnamen koding mereka pada tahun 2020. Algoritma greedy yang diterapkan mengikuti beberapa langkah berikut:
+
+1. Mencari semua command yang mungkin dilakukan pada state tertentu
+2. Memasukkan command tersebut ke dalam list berisi himpunan kandidat
+3. Menilai setiap command berdasarkan fungsi objektif:
+  - f(x) = (SpeedStateAkhir - SpeedStateAwal + BobotSpeedState, DamageAkhir - DamageAwal + BobotDamage), x = command
+  - Speed State dan Damage Dihitung berdasarkan peraturan game dan pembobotan berdasarkan tabel pembobotan yang terdapat pada laporan.
+4. Menyimpan command pertama pada variabel prediksi terbaik
+5. Melakukan iterasi terhadap anggota list berdasarkan fungsi seleksi:
+  - Jika menemukan command yang pertambahan speed state lebih besar, menggantikan prediksi terbaik dengan command yang baru ditemukan.
+  - Jika menemukan command yang pertambahan speed state sama dengan prediksi, menggantikan prediksi terbaik dengan command yang baru ditemukan jika pengurangan damage lebih besar.
+6. Menjalankan command terbaik
+
 ## Cara compile
-- cd src\FastAndCurious
+
+Prerequisite:
+- Java Versi Terbaru
+- Maven Versi Terbaru
+- IntelliJ IDEA Versi Terbaru
+
+Cara:
+- Pada directory repository lakukan "cd src\FastAndCurious"
+- Buatlah project IDEA pada current directory
 - Pada IDEA -> view | Tool Windows | Maven
-- Pada folder lifecycles ada "package", select lalu klik tombol run hijau pada tool window
+- Pada folder lifecycles ada pilihan "package", select lalu klik tombol run hijau pada tool window
 
-## Spesifikasi Pengumpulan
-Program disimpan dalam folder Tubes1_NamaKelompok dengan NamaKelompok merupakan nama kelompok yang terdaftar pada https://bit.ly/KelompokStima12022. Berikut merupakan struktur dari isi folder tersebut.
-- Folder src berisi source code (Folder bot kalian dengan struktur seperti folder
-java di dalam “starter-bots”)
-- Folder bin berisi executable (File .jar) dengan format nama_kelompok.jar
-- Folder doc berisi laporan tugas besar dengan format nama_kelompok.pdf
-- README untuk tata cara penggunaan yang minimal berisi:
-  - Penjelasan singkat algoritma greedy yang diimplementasikan
-  - Requirement program dan instalasi tertentu bila ada
-  - Command atau langkah-langkah dalam meng-compile atau build program
-  - Author / identitas pembuat
-- BONUS:
-  - Setiap kelompok membuat video aplikasi yang mereka buat kemudian mengunggahnya ke YouTube. Video yang dibuat harus memiliki audio dan
-menampilkan wajah dari setiap anggota kelompok. Pada waktu demo aplikasi di depan asisten, mahasiswa mengakses video YouTube tersebut dan memutarnya di depan asisten. Beberapa contoh video tubes tahun-tahun sebelumnya dapat dilihat di YouTube dengan menggunakan kata kunci “Tubes Stima”, “Tugas besar stima”, “strategi algoritma”, dll.
+## Struktur Repository
 
-## Spesifikasi Keperluan
-1. Starter sudah terdapat di folder src/Original Files
-2. Untuk menjalankan permainan, kalian butuh beberapa requirement dasar sebagai berikut.
-  - Java (minimal Java 8): https://www.oracle.com/java/technologies/downloads/#java8
-  - IntelIiJ IDEA: https://www.jetbrains.com/idea/
-  - NodeJS: https://nodejs.org/en/download/
-3. Untuk menjalankan permainan, kalian dapat membuka file “run.bat” (Untuk Windows dapat buka dengan double-click, Untuk Linux/Mac dapat menjalankan command “make run”).
-4. Secara default, permainan akan dilakukan diantara reference bot (default-nya berbahasa Java) dan starter bot (default-nya berbahasa JavaScript) yang disediakan. Untuk mengubah hal tersebut, silahkan edit file “game-runner-config.json”. Anda juga dapat mengubah file “bot.json” dalam direktori “starter-bots” untuk mengatur informasi terkait bot anda.
-5. Silahkan bersenang-senang dengan memodifikasi bot yang disediakan di starter-bots. Ingat bahwa bot kalian harus menggunakan bahasa Java dan di-build menggunakan IntelIiJ sebelum menjalankan permainan kembali. Dilarang menggunakan kode program yang sudah ada untuk pemainnya atau kode program lain yang diunduh dari Internet. Mahasiswa harus membuat program sendiri, tetapi belajar dari program yang
-sudah ada tidak dilarang.
-6. (Optional) Anda dapat melihat hasil permainan dengan menggunakan visualizer berikut https://github.com/Affuta/overdrive-round-runner or https://entelect-replay.raezor.co.za/
-7. Untuk referensi lebih lanjut, silahkan eksplorasi di https://github.com/EntelectChallenge/2020-Overdrive.
+|-- Repository
+  |-- bin
+    |-- target
+      |-- ... ( class folders and maven build files )
+      \- FastAndCurious-jar-with-dependencies.jar
+      \- FastAndCurious.jar
+    \- bot.json
+  |-- doc
+    \- FastAndCurious.pdf
+  |-- src
+    |-- FastAndCurious
+      |-- src
+        |-- META-INF ( Untuk membantu build )
+        |-- za\co\entelect\challenge
+          |-- command
+            \- ... ( Primitif yang diperoleh dari starter bot dan dimodifikasi )
+          |-- entities
+            \- ... ( Primitif yang diperoleh dari starter bot dan dimodifikasi )
+          |-- enums
+            \- ... ( Primitif yang diperoleh dari starter bot dan dimodifikasi )
+          \- Bot.java
+          \- Main.java ( Bot runner yang diperoleh dari starter bot dan dimodifikasi )
+        \- pom.xml ( Maven Compiler Settings )
+    |-- Original Files
+      \- starter-pack.zip ( zip original yang diperoleh dari website entelect )
+    |-- starter-pack
+      |-- reference-bot
+        \- ... ( bot referensi awal )
+      |-- starter-bots
+        \- ... ( bot starter )
+      \- game-config.json
+      \- game-engine.jar
+      \- game-runner-config.json ( konfigurasi game runner )
+      \- game-runner-jar-with-dependencies.jar
+      \- makefile ( untuk run memakai command make run )
+      \- run.bat ( untuk run memakai command run.bat )
+  \- LICENSE
+  \- README.md
 
-## Spesifikasi Permainan
-1. Peta permainan memiliki bentuk array 2 dimensi yang memiliki 4 jalur lurus. Setiap jalur dibentuk oleh block yang saling berurutan, panjang peta terdiri atas 1500 block. Terdapat 5 tipe block, yaitu Empty, Mud, Oil Spill, Flimsy Wall, dan Finish Line yang masing-masing karakteristik dan efek berbeda. Block dapat memuat powerups yang bisa diambil oleh mobil yang melewati block tersebut.
-2. Beberapa powerups yang tersedia adalah:
-  - Oil item, dapat menumpahkan oli di bawah mobil anda berada.
-  - Boost, dapat mempercepat kecepatan mobil anda secara drastis.
-  - Lizard, berguna untuk menghindari lizard yang mengganggu jalan mobil anda.
-  - Tweet, dapat menjatuhkan truk di block spesifik yang anda inginkan.
-  - EMP, dapat menembakkan EMP ke depan jalur dari mobil anda dan membuat mobil musuh (jika sedang dalam 1 lane yang sama) akan terus berada di lane yang sama sampai akhir pertandingan. Kecepatan mobil musuh juga dikurangi 3.
-3. Bot mobil akan memiliki kecepatan awal sebesar 5 dan akan maju sebanyak 5 block untuk setiap round. Game state akan memberikan jarak pandang hingga 20 block di depan dan 5 block di belakang bot sehingga setiap bot dapat mengetahui kondisi peta permainan pada jarak pandang tersebut.
-4. Terdapat command yang memungkinkan bot mobil untuk mengubah jalur, mempercepat, memperlambat, serta menggunakan powerups. Pada setiap round, masing-masing pemain dapat memberikan satu buah command untuk mobil mereka. Berikut jenis-jenis command yang ada pada permainan:
-  - NOTHING
-  - ACCELERATE
-  - DECELERATE
-  - TURN_LEFT
-  - TURN_RIGHT
-  - USE_BOOST
-  - USE_OIL
-  - USE_LIZARD
-  - USE_TWEET \[lane\] \[block\]
-  - USE_EMP
-  - FIX
-5. Command dari kedua pemain akan dieksekusi secara bersamaan (bukan sekuensial) dan akan divalidasi terlebih dahulu. Jika command tidak valid, bot mobil tidak akan melakukan apa-apa dan akan mendapatkan pengurangan skor.
-6. Bot pemain yang pertama kali mencapai garis finish akan memenangkan pertandingan. Jika kedua bot mencapai garis finish secara bersamaan, bot yang akan memenangkan pertandingan adalah yang memiliki kecepatan tercepat, dan jika kecepatannya sama, bot yang memenangkan pertandingan adalah yang memiliki skor terbesar.
+## Cara melakukan run game
 
-## Spesifikasi Laporan
+Menggunakan repository ini:
+- Pindahkan working directory ke src\starter-pack ( Jika sudah berada di folder repository lakukan "cd src\starter-pack" )
+- Ketik command "run.bat" atau "make run" dalam terminal
+- Tonton hasil pertandingan antara bot
 
-- Cover: Cover laporan ada foto anggota kelompok (foto bertiga). Foto ini menggantikan
-logo “gajah” ganesha.
-- Bab 1: Deskripsi tugas (dapat menyalin spesifikasi tugas ini).
-- Bab 2: Landasan Teori.
-  - Dasar teori (algoritma greedy) secara umum
-  - Bagaimana cara kerja program secara umum (bagaimana bot melakukan
-aksinya, bagaimana mengimplementasikan algoritma greedy ke dalam bot,
-bagaimana menjalankan game engine, dll).
-- Bab 3: Aplikasi strategi greedy.
-  - Proses mapping persoalan Overdrive menjadi elemen-elemen algoritma Greedy
-(himpunan kandidat, himpunan solusi, fungsi solusi, fungsi seleksi, fungsi
-kelayakan, fungsi objektif)
-  - Eksplorasi alternatif solusi greedy yang mungkin dipilih dalam persoalan
-Overdrive
-  - Analisis efisiensi dari kumpulan alternatif solusi greedy yang dirumuskan
-  - Analisis efektivitas dari kumpulan alternatif solusi greedy yang dirumuskan
-  - Strategi greedy yang dipilih (yang akan diimplementasikan dalam program)
-beserta alasan dan pertimbangan pemilihan strategi tersebut.
-- Bab 4: Implementasi dan pengujian.
-  - Implementasi algoritma greedy pada program bot dalam game engine yang
-digunakan (pseudocode yang cukup detail dengan komentar untuk pembaca
-kode agar mudah dipahami).
-  - Penjelasan struktur data yang digunakan dalam program bot Overdrive dan
-struktur data tambahan jika ada.
-  - Analisis dari desain solusi algoritma greedy yang diimplementasikan pada setiap
-pengujian yang dilakukan. Misalnya adalah apakah strategi greedy berhasil
-mendapatkan nilai optimal, lalu jika tidak, dalam kondisi seperti apa strategi
-greedy tidak berhasil mendapatkan nilai optimal, dsb.
-- Bab 5: Kesimpulan dan saran.
-- Daftar Pustaka
+Menggunakan repository lain:
+- Pindahkan folder bin ke directory yang diinginkan
+- Ubah "game-runner-config.json" pada game engine yang dipakai sehingga data "player-a" atau "player-b" menunjuk pada folder bin yang dipindahkan sebelumnya ( contoh: '"player-a": "../../bin"' untuk repository ini )
+- Ketik command "run.bat" atau "make run" dalam terminal
+- Tonton hasil pertandingan antara bot
+
